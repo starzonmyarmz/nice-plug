@@ -102,6 +102,16 @@ impl<P: ClapPlugin> ActivateContext<P> for WrapperActivateContext<'_, P> {
     fn set_current_voice_capacity(&self, capacity: u32) {
         self.wrapper.set_current_voice_capacity(capacity)
     }
+
+    #[cfg(feature = "editor")]
+    fn gui_context(&self) -> nice_plug_core::context::gui::GuiContext {
+        self.wrapper
+            .this
+            .borrow()
+            .upgrade()
+            .expect("the wrapper outlives its activate context")
+            .make_gui_context()
+    }
 }
 
 impl<P: ClapPlugin> ProcessContext<P> for WrapperProcessContext<'_, P> {

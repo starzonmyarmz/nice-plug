@@ -119,7 +119,7 @@ const MAX_STATE_BYTES: u64 = 268_435_456;
 
 pub struct Wrapper<P: ClapPlugin> {
     /// A reference to this object, upgraded to an `Arc<Self>` for the GUI context.
-    this: AtomicRefCell<Weak<Self>>,
+    pub(super) this: AtomicRefCell<Weak<Self>>,
 
     /// The wrapped plugin instance.
     plugin: TryLock<P>,
@@ -821,7 +821,7 @@ impl<P: ClapPlugin> Wrapper<P> {
     }
 
     #[cfg(feature = "editor")]
-    fn make_gui_context(self: Arc<Self>) -> GuiContext {
+    pub(super) fn make_gui_context(self: Arc<Self>) -> GuiContext {
         GuiContext::new(Arc::new(WrapperGuiContext {
             wrapper: Arc::downgrade(&self),
             #[cfg(debug_assertions)]

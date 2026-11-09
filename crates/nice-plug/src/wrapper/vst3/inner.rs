@@ -19,8 +19,8 @@ use parking_lot::Mutex;
 #[cfg(feature = "editor")]
 use parking_lot::RwLock;
 use std::collections::{HashMap, HashSet, VecDeque};
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Weak};
 use try_lock::TryLock;
 #[cfg(feature = "editor")]
 use vst3::ComWrapper;
@@ -47,6 +47,7 @@ use crate::wrapper::vst3::view::WrapperView;
 /// Since we can't combine that with VST3's interior reference counting this just has to be moved to
 /// its own struct.
 pub(crate) struct WrapperInner<P: Vst3Plugin> {
+    pub this: AtomicRefCell<Weak<Self>>,
     /// The wrapped plugin instance.
     pub plugin: TryLock<P>,
     /// The plugin's background task executor closure.
@@ -329,6 +330,7 @@ impl<P: Vst3Plugin> WrapperInner<P> {
         };
 
         let wrapper = Arc::new(Self {
+            this: AtomicRefCell::new(Weak::new()),
             plugin: TryLock::new(plugin),
             task_executor,
             params,
@@ -385,6 +387,7 @@ impl<P: Vst3Plugin> WrapperInner<P> {
         // FIXME: Right now this is safe, but if we are going to have a singleton main thread queue
         //        serving multiple plugin instances, Arc can't be used because its reference count
         //        is separate from the internal COM-style reference count.
+        *wrapper.this.borrow_mut() = Arc::downgrade(&wrapper);
         *wrapper.event_loop.borrow_mut() =
             Some(OsEventLoop::new_and_spawn(Arc::downgrade(&wrapper)));
 

@@ -6,7 +6,9 @@ use nice_plug_core::plugin::Plugin;
 
 #[cfg(feature = "editor")]
 use nice_plug_core::{
-    context::gui::GuiContextInner, params::internals::ParamPtr, plugin::PluginState,
+    context::gui::{GuiContext, GuiContextInner},
+    params::internals::ParamPtr,
+    plugin::PluginState,
 };
 
 use super::backend::Backend;
@@ -46,6 +48,16 @@ impl<P: Plugin, B: Backend<P>> ActivateContext<P> for WrapperActivateContext<'_,
 
     fn set_current_voice_capacity(&self, _capacity: u32) {
         // This is only supported by CLAP
+    }
+
+    #[cfg(feature = "editor")]
+    fn gui_context(&self) -> GuiContext {
+        self.wrapper
+            .this
+            .borrow()
+            .upgrade()
+            .expect("the wrapper outlives its activate context")
+            .make_gui_context()
     }
 }
 

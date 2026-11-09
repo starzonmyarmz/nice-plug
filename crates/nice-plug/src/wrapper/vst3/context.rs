@@ -25,7 +25,9 @@ use vst3::Steinberg::Vst::IComponentHandlerTrait;
 
 #[cfg(feature = "editor")]
 use nice_plug_core::{
-    context::gui::GuiContextInner, params::internals::ParamPtr, plugin::PluginState,
+    context::gui::{GuiContext, GuiContextInner},
+    params::internals::ParamPtr,
+    plugin::PluginState,
 };
 
 use crate::wrapper::vst3::Vst3Plugin;
@@ -105,6 +107,16 @@ impl<P: Vst3Plugin> ActivateContext<P> for WrapperActivateContext<'_, P> {
 
     fn set_current_voice_capacity(&self, _capacity: u32) {
         // This is only supported by CLAP
+    }
+
+    #[cfg(feature = "editor")]
+    fn gui_context(&self) -> GuiContext {
+        self.inner
+            .this
+            .borrow()
+            .upgrade()
+            .expect("the wrapper outlives its activate context")
+            .make_gui_context()
     }
 }
 

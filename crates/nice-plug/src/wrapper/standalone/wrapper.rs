@@ -15,8 +15,8 @@ use parking_lot::Mutex;
 use std::collections::{HashMap, HashSet};
 #[cfg(feature = "editor")]
 use std::error::Error;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
+use std::sync::{Arc, Weak};
 use std::thread;
 
 use super::backend::Backend;
@@ -34,6 +34,7 @@ use crate::wrapper::util::process_wrapper;
 const EVENT_QUEUE_CAPACITY: usize = 2048;
 
 pub struct Wrapper<P: Plugin, B: Backend<P>> {
+    pub(super) this: AtomicRefCell<Weak<Self>>,
     backend: AtomicRefCell<B>,
 
     /// The wrapped plugin instance.
@@ -194,6 +195,7 @@ impl<P: Plugin, B: Backend<P>> Wrapper<P, B> {
         }
 
         let wrapper = Arc::new(Wrapper {
+            this: AtomicRefCell::new(Weak::new()),
             backend: AtomicRefCell::new(backend),
 
             plugin: Mutex::new(plugin),
@@ -234,6 +236,7 @@ impl<P: Plugin, B: Backend<P>> Wrapper<P, B> {
             current_latency: AtomicU32::new(0),
         });
 
+        *wrapper.this.borrow_mut() = Arc::downgrade(&wrapper);
         *wrapper.event_loop.borrow_mut() =
             Some(OsEventLoop::new_and_spawn(Arc::downgrade(&wrapper)));
 
@@ -560,7 +563,7 @@ impl<P: Plugin, B: Backend<P>> Wrapper<P, B> {
     }
 
     #[cfg(feature = "editor")]
-    fn make_gui_context(self: Arc<Self>) -> GuiContext {
+    pub(super) fn make_gui_context(self: Arc<Self>) -> GuiContext {
         GuiContext::new(Arc::new(WrapperGuiContext {
             wrapper: Arc::downgrade(&self),
             #[cfg(debug_assertions)]

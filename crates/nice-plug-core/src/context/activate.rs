@@ -33,4 +33,9 @@ pub trait ActivateContext<P: Plugin> {
     /// allows the host to better optimize polyphonic modulation, or to switch to strictly monophonic
     /// modulation when dropping the capacity down to 1.
     fn set_current_voice_capacity(&self, capacity: u32);
+
+    /// A context for setting parameters from outside an editor, for instance from a background
+    /// task driven by MIDI. Like an editor's context, it must only be used from the main thread.
+    #[cfg(feature = "editor")]
+    fn gui_context(&self) -> crate::context::gui::GuiContext;
 }
